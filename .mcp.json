@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "postgres-mcp-server:latest"
+      ],
+      "env": {
+        "PGDATABASE": "postgres",
+        "PGHOST": "localhost",
+        "PGPORT": "5432",
+        "PGUSER": "postgres",
+        "PGPASSWORD": "postgres"
+      }
+    }
+  }
+}

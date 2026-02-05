@@ -1,12 +1,28 @@
 {
   "name": "@ssakihara/postgres-mcp-server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "MCP server for interacting with PostgreSQL databases",
+  "main": "dist/index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "docker:build": "docker build -t postgres-mcp-server .",
+    "docker:run": "docker run -i --rm -e PGDATABASE=testdb postgres-mcp-server",
+    "test": "vitest",
+    "test:onece": "vitest run",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
-  "keywords": [],
+  "keywords": [
+    "mcp",
+    "postgres",
+    "postgresql",
+    "database",
+    "model-context-protocol"
+  ],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.28.2",
@@ -15,6 +31,22 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
+    "pg": "^8.14.1",
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@eslint/json": "^1.0.0",
+    "@stylistic/eslint-plugin": "^5.7.1",
+    "@types/node": "^22.13.14",
+    "@types/pg": "^8.12.1",
+    "@vitest/coverage-v8": "^4.0.18",
+    "eslint": "^9.39.2",
+    "globals": "^17.3.0",
+    "jiti": "^2.6.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.54.0",
+    "vitest": "^4.0.18"
   }
 }

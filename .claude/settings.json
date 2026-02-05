@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm run lint:fix $CLAUDE_FILE_PATHS"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm run test:once $CLAUDE_FILE_PATHS"
+          }
+        ]
+      }
+    ]
+  }
+}
