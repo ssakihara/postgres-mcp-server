@@ -12,16 +12,17 @@ export async function handleQuery(input: unknown): Promise<string> {
 
   // Basic SQL injection prevention - warn about dangerous operations
   const upperSql = sql.toUpperCase().trim();
-  if (upperSql.startsWith('DROP ') || upperSql.startsWith('TRUNCATE ') || upperSql.startsWith('ALTER ')) {
+  if (upperSql.startsWith('DROP ') || upperSql.startsWith('TRUNCATE ') || upperSql.startsWith('ALTER ') || upperSql.startsWith('DELETE ')) {
     return JSON.stringify({
       error: 'Dangerous operation detected',
-      message: 'DROP, TRUNCATE, and ALTER operations are not allowed for safety reasons',
+      message: 'DROP, TRUNCATE, ALTER, and DELETE operations are not allowed for safety reasons',
       sql: sql,
     }, null, 2);
   }
 
   // DELETE is only allowed with a WHERE clause to target specific rows
   // Also checks the affected row count before executing (max 1 row allowed)
+  // Note: This is currently unreachable due to the DELETE check above
   if (upperSql.includes('DELETE FROM')) {
     const deleteIndex = upperSql.indexOf('DELETE FROM');
     const whereIndex = upperSql.indexOf('WHERE', deleteIndex);

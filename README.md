@@ -52,6 +52,29 @@ pnpm run start
 
 ### Docker
 
+#### GitHub Container Registry から使用
+
+```bash
+# GitHub Container Registry からイメージをプル
+docker pull ghcr.io/ssakihara/postgres-mcp-server:latest
+
+# デフォルト設定で実行
+docker run -i --rm \
+  -e PGDATABASE=mydb \
+  ghcr.io/ssakihara/postgres-mcp-server:latest
+
+# カスタム PostgreSQL 接続で実行
+docker run -i --rm \
+  -e PGHOST=host.docker.internal \
+  -e PGPORT=5432 \
+  -e PGDATABASE=mydb \
+  -e PGUSER=myuser \
+  -e PGPASSWORD=mypassword \
+  ghcr.io/ssakihara/postgres-mcp-server:latest
+```
+
+#### ローカルでビルド
+
 ```bash
 # Docker イメージをビルド
 pnpm run docker:build
@@ -177,7 +200,7 @@ Claude Desktop の設定ファイルを編集して、この MCP サーバーを
 ```json
 {
   "mcpServers": {
-    "postgres": {
+    "pms": {
       "command": "node",
       "args": ["/path/to/postgres-mcp-server/dist/index.js"],
       "env": {
@@ -194,10 +217,46 @@ Claude Desktop の設定ファイルを編集して、この MCP サーバーを
 
 ### Docker MCP サーバー
 
+GitHub Container Registry のイメージを使用:
+
 ```json
 {
   "mcpServers": {
-    "postgres": {
+    "pms": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--pull", "always",
+        "-i",
+        "--rm",
+        "-e",
+        "PGHOST",
+        "-e",
+        "PGDATABASE",
+        "-e",
+        "PGUSER",
+        "-e",
+        "PGPASSWORD",
+        "ghcr.io/ssakihara/postgres-mcp-server:latest"
+      ],
+      "env": {
+        "PGDATABASE": "test_db",
+        "PGHOST": "host.docker.internal",
+        "PGPORT": "5432",
+        "PGUSER": "postgres",
+        "PGPASSWORD": "postgres"
+      }
+    }
+  }
+}
+```
+
+またはローカルビルド版:
+
+```json
+{
+  "mcpServers": {
+    "pms": {
       "command": "docker",
       "args": [
         "run", "-i", "--rm",
