@@ -1,10 +1,10 @@
 {
   "mcpServers": {
     "pms": {
-      "type": "stdio",
       "command": "docker",
       "args": [
         "run",
+        "--pull", "always",
         "-i",
         "--rm",
         "-e",
@@ -17,7 +17,7 @@
         "PGUSER",
         "-e",
         "PGPASSWORD",
-        "postgres-mcp-server:latest"
+        "ghcr.io/ssakihara/postgres-mcp-server:latest"
       ],
       "env": {
         "PGDATABASE": "test_db",
