@@ -1,17 +1,27 @@
 {
   "mcpServers": {
-    "postgres": {
+    "pms": {
       "type": "stdio",
       "command": "docker",
       "args": [
         "run",
         "-i",
         "--rm",
+        "-e",
+        "PGDATABASE",
+        "-e",
+        "PGHOST",
+        "-e",
+        "PGPORT",
+        "-e",
+        "PGUSER",
+        "-e",
+        "PGPASSWORD",
         "postgres-mcp-server:latest"
       ],
       "env": {
-        "PGDATABASE": "postgres",
-        "PGHOST": "localhost",
+        "PGDATABASE": "test_db",
+        "PGHOST": "host.docker.internal",
         "PGPORT": "5432",
         "PGUSER": "postgres",
         "PGPASSWORD": "postgres"
