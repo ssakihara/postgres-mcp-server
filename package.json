@@ -11,7 +11,7 @@
     "docker:build": "docker build -t postgres-mcp-server .",
     "docker:run": "docker run -i --rm -e PGDATABASE=testdb postgres-mcp-server",
     "test": "vitest",
-    "test:onece": "vitest run",
+    "test:once": "vitest run",
     "test:coverage": "vitest --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
