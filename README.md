@@ -1,6 +1,6 @@
 # PostgreSQL MCP Server
 
-`@modelcontextprotocol/sdk` を使用して、LLM が PostgreSQL データベースと対話できるようにする MCP (Model Context Protocol) サーバーです。
+LLM が PostgreSQL データベースと対話できるようにする MCP (Model Context Protocol) サーバーです。
 
 ## 特徴
 
@@ -10,15 +10,29 @@
 - **安全な操作**: 危険な操作（DROP、TRUNCATE、ALTER、DELETE）に対する保護機能
 - **Docker サポート**: 簡単な統合のためのコンテナ化デプロイメント
 
-## インストール
+## クイックスタート
+
+### Claude Code を使用している場合
 
 ```bash
-# 依存関係をインストール
-pnpm install
-
-# TypeScript をビルド
-pnpm run build
+claude mcp add -s project pms docker \
+  --env PGSCHEMA=public \
+  --env PGDATABASE=test_db \
+  --env PGHOST=host.docker.internal \
+  --env PGPORT=5432 \
+  --env PGUSER=postgres \
+  --env PGPASSWORD=your_password \
+  -- run --pull always -i --rm \
+  -e PGSCHEMA \
+  -e PGDATABASE \
+  -e PGHOST \
+  -e PGPORT \
+  -e PGUSER \
+  -e PGPASSWORD \
+  ghcr.io/ssakihara/postgres-mcp-server:latest
 ```
+
+環境変数の値は実際の環境に合わせて変更してください。
 
 ## 環境変数
 
@@ -31,76 +45,9 @@ pnpm run build
 | `PGPASSWORD` | データベースパスワード | - | いいえ |
 | `PGSCHEMA` | デフォルトスキーマ名 | `public` | いいえ |
 
-## 使用方法
-
-### ローカル開発
-
-```bash
-# 環境変数を設定
-export PGDATABASE=mydb
-export PGHOST=localhost
-export PGPORT=5432
-export PGUSER=myuser
-export PGPASSWORD=mypassword
-export PGSCHEMA=myschema  # オプション: デフォルトは 'public'
-
-# tsx で開発モードを実行
-pnpm run dev
-
-# またはコンパイル済みバージョンを実行
-pnpm run build
-pnpm run start
-```
-
-### Docker
-
-#### GitHub Container Registry から使用
-
-```bash
-# GitHub Container Registry からイメージをプル
-docker pull ghcr.io/ssakihara/postgres-mcp-server:latest
-
-# デフォルト設定で実行
-docker run -i --rm \
-  -e PGDATABASE=mydb \
-  ghcr.io/ssakihara/postgres-mcp-server:latest
-
-# カスタム PostgreSQL 接続で実行
-docker run -i --rm \
-  -e PGHOST=host.docker.internal \
-  -e PGPORT=5432 \
-  -e PGDATABASE=mydb \
-  -e PGUSER=myuser \
-  -e PGPASSWORD=mypassword \
-  -e PGSCHEMA=myschema \
-  ghcr.io/ssakihara/postgres-mcp-server:latest
-```
-
-#### ローカルでビルド
-
-```bash
-# Docker イメージをビルド
-pnpm run docker:build
-
-# デフォルト設定で実行
-docker run -i --rm \
-  -e PGDATABASE=mydb \
-  postgres-mcp-server
-
-# カスタム PostgreSQL 接続で実行
-docker run -i --rm \
-  -e PGHOST=host.docker.internal \
-  -e PGPORT=5432 \
-  -e PGDATABASE=mydb \
-  -e PGUSER=myuser \
-  -e PGPASSWORD=mypassword \
-  -e PGSCHEMA=myschema \
-  postgres-mcp-server
-```
-
 ## MCP ツール
 
-### 1. `query`
+### `query`
 
 データベースに対して SQL クエリを実行します。
 
@@ -123,7 +70,7 @@ docker run -i --rm \
 }
 ```
 
-### 2. `list_schemas`
+### `list_schemas`
 
 データベース内のすべてのスキーマを一覧表示します。
 
@@ -143,7 +90,7 @@ docker run -i --rm \
 }
 ```
 
-### 3. `list_tables`
+### `list_tables`
 
 スキーマ内のテーブルを一覧表示します。
 
@@ -165,7 +112,7 @@ docker run -i --rm \
 }
 ```
 
-### 4. `describe_table`
+### `describe_table`
 
 テーブルの詳細情報を取得します。
 
@@ -189,98 +136,43 @@ docker run -i --rm \
 }
 ```
 
-## Claude Desktop との統合
+## Docker で使用する
 
-Claude Desktop の設定ファイルを編集して、この MCP サーバーを使用するように設定します。
+### GitHub Container Registry から使用
 
-### macOS
-`~/Library/Application Support/Claude/claude_desktop_config.json`
-
-### Windows
-`%APPDATA%/Claude/claude_desktop_config.json`
-
-### ローカル MCP サーバー
-
-```json
-{
-  "mcpServers": {
-    "pms": {
-      "command": "node",
-      "args": ["/path/to/postgres-mcp-server/dist/index.js"],
-      "env": {
-        "PGDATABASE": "mydb",
-        "PGHOST": "localhost",
-        "PGPORT": "5432",
-        "PGUSER": "myuser",
-        "PGPASSWORD": "mypassword",
-        "PGSCHEMA": "myschema"
-      }
-    }
-  }
-}
+```bash
+docker run -i --rm \
+  -e PGHOST=host.docker.internal \
+  -e PGPORT=5432 \
+  -e PGDATABASE=mydb \
+  -e PGUSER=myuser \
+  -e PGPASSWORD=mypassword \
+  -e PGSCHEMA=public \
+  ghcr.io/ssakihara/postgres-mcp-server:latest
 ```
 
-### Docker MCP サーバー
+### ローカルでビルドして使用
 
-GitHub Container Registry のイメージを使用:
+```bash
+# Docker イメージをビルド
+docker build -t postgres-mcp-server .
 
-```json
-{
-  "mcpServers": {
-    "pms": {
-      "command": "docker",
-      "args": [
-        "run",
-        "--pull", "always",
-        "-i",
-        "--rm",
-        "-e",
-        "PGHOST",
-        "-e",
-        "PGDATABASE",
-        "-e",
-        "PGUSER",
-        "-e",
-        "PGPASSWORD",
-        "-e",
-        "PGSCHEMA",
-        "ghcr.io/ssakihara/postgres-mcp-server:latest"
-      ],
-      "env": {
-        "PGDATABASE": "test_db",
-        "PGHOST": "host.docker.internal",
-        "PGPORT": "5432",
-        "PGUSER": "postgres",
-        "PGPASSWORD": "postgres",
-        "PGSCHEMA": "myschema"
-      }
-    }
-  }
-}
+# 実行
+docker run -i --rm \
+  -e PGHOST=host.docker.internal \
+  -e PGPORT=5432 \
+  -e PGDATABASE=mydb \
+  -e PGUSER=myuser \
+  -e PGPASSWORD=mypassword \
+  -e PGSCHEMA=public \
+  postgres-mcp-server
 ```
 
-またはローカルビルド版:
+---
 
-```json
-{
-  "mcpServers": {
-    "pms": {
-      "command": "docker",
-      "args": [
-        "run", "-i", "--rm",
-        "-e", "PGHOST=host.docker.internal",
-        "-e", "PGDATABASE=mydb",
-        "-e", "PGUSER=myuser",
-        "-e", "PGPASSWORD=mypassword",
-        "-e", "PGSCHEMA=myschema",
-        "postgres-mcp-server"
-      ]
-    }
-  }
-}
-```
+## 開発者向け
 
-## 開発
+### セットアップ
 
 ```bash
 # 依存関係をインストール
@@ -296,7 +188,7 @@ pnpm run build
 pnpm test
 ```
 
-## プロジェクト構成
+### プロジェクト構成
 
 ```
 postgres-mcp-server/
