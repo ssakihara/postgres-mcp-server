@@ -5,6 +5,7 @@ import { handleListTables, handleDescribeTable } from '../src/tools/tables.js';
 // Mock the db module
 vi.mock('../src/db.js', () => ({
   query: vi.fn(),
+  getDefaultSchema: vi.fn(() => 'public'),
 }));
 
 import { query } from '../src/db.js';

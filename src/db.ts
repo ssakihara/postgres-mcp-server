@@ -2,8 +2,10 @@
 import { Client, ClientConfig, QueryResult } from 'pg';
 
 // Singleton client instance
-
 let client: Client | null = null;
+
+// Schema name validation: starts with letter/underscore, contains only letters/digits/underscores, max 63 chars
+const VALID_SCHEMA_NAME = /^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/;
 
 interface DatabaseConfig {
   host: string;
@@ -61,4 +63,24 @@ export async function close(): Promise<void> {
     await client.end();
     client = null;
   }
+}
+
+/**
+ * Gets the default schema name from PGSCHEMA environment variable.
+ * Falls back to 'public' if not set.
+ *
+ * @returns The default schema name
+ * @throws {Error} If PGSCHEMA is set but contains an invalid schema name
+ */
+export function getDefaultSchema(): string {
+  const schema = process.env.PGSCHEMA || 'public';
+
+  if (!VALID_SCHEMA_NAME.test(schema)) {
+    throw new Error(
+      `Invalid PGSCHEMA value: "${schema}". Schema names must start with a letter or underscore, `
+      + `contain only letters, digits, and underscores, and be 63 characters or less.`,
+    );
+  }
+
+  return schema;
 }

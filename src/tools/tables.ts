@@ -1,18 +1,44 @@
 import { z } from 'zod';
-import { query } from '../db.js';
+import { query, getDefaultSchema } from '../db.js';
+
+const defaultSchema = getDefaultSchema();
+
+// Table name validation (same rules as schema name)
+const VALID_TABLE_NAME = /^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/;
+
+function validateTableName(tableName: string): void {
+  if (!VALID_TABLE_NAME.test(tableName)) {
+    throw new Error(
+      `Invalid table name: "${tableName}". Table names must start with a letter or underscore, `
+      + `contain only letters, digits, and underscores, and be 63 characters or less.`,
+    );
+  }
+}
+
+function validateSchemaName(schema: string): void {
+  if (!VALID_TABLE_NAME.test(schema)) {
+    throw new Error(
+      `Invalid schema name: "${schema}". Schema names must start with a letter or underscore, `
+      + `contain only letters, digits, and underscores, and be 63 characters or less.`,
+    );
+  }
+}
 
 const ListTablesInputSchema = z.object({
-  schema: z.string().default('public'),
+  schema: z.string().default(defaultSchema),
   includeRowCount: z.boolean().default(false),
 });
 
 const DescribeTableInputSchema = z.object({
   tableName: z.string().min(1, 'Table name cannot be empty'),
-  schema: z.string().default('public'),
+  schema: z.string().default(defaultSchema),
 });
 
 export async function handleListTables(input: unknown): Promise<string> {
-  const { schema = 'public', includeRowCount = false } = ListTablesInputSchema.parse(input);
+  const { schema, includeRowCount = false } = ListTablesInputSchema.parse(input);
+
+  // Validate schema name to prevent SQL injection
+  validateSchemaName(schema);
 
   try {
     const sql = `
@@ -32,6 +58,8 @@ export async function handleListTables(input: unknown): Promise<string> {
     if (includeRowCount) {
       for (const table of tables) {
         try {
+          // Validate table name to prevent SQL injection
+          validateTableName(table.table_name);
           const countResult = await query(`SELECT COUNT(*) as count FROM "${schema}"."${table.table_name}"`);
           table.row_count = parseInt(countResult.rows[0].count, 10);
         }
@@ -63,7 +91,11 @@ export async function handleListTables(input: unknown): Promise<string> {
 }
 
 export async function handleDescribeTable(input: unknown): Promise<string> {
-  const { tableName, schema = 'public' } = DescribeTableInputSchema.parse(input);
+  const { tableName, schema } = DescribeTableInputSchema.parse(input);
+
+  // Validate schema and table names to prevent SQL injection
+  validateSchemaName(schema);
+  validateTableName(tableName);
 
   try {
     // Get column information

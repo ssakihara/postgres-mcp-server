@@ -47,6 +47,7 @@ pnpm run docker:run
 | `PGPORT` | いいえ | `5432` | PostgreSQL ポート |
 | `PGUSER` | いいえ | 現在のユーザー / `postgres` | データベースユーザー |
 | `PGPASSWORD` | いいえ | - | データベースパスワード |
+| `PGSCHEMA` | いいえ | `public` | デフォルトスキーマ名 |
 
 ## アーキテクチャ
 

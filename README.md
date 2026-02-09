@@ -29,6 +29,7 @@ pnpm run build
 | `PGDATABASE` | データベース名 | - | **はい** |
 | `PGUSER` | データベースユーザー | 現在のユーザー / `postgres` | いいえ |
 | `PGPASSWORD` | データベースパスワード | - | いいえ |
+| `PGSCHEMA` | デフォルトスキーマ名 | `public` | いいえ |
 
 ## 使用方法
 
@@ -41,6 +42,7 @@ export PGHOST=localhost
 export PGPORT=5432
 export PGUSER=myuser
 export PGPASSWORD=mypassword
+export PGSCHEMA=myschema  # オプション: デフォルトは 'public'
 
 # tsx で開発モードを実行
 pnpm run dev
@@ -70,6 +72,7 @@ docker run -i --rm \
   -e PGDATABASE=mydb \
   -e PGUSER=myuser \
   -e PGPASSWORD=mypassword \
+  -e PGSCHEMA=myschema \
   ghcr.io/ssakihara/postgres-mcp-server:latest
 ```
 
@@ -91,6 +94,7 @@ docker run -i --rm \
   -e PGDATABASE=mydb \
   -e PGUSER=myuser \
   -e PGPASSWORD=mypassword \
+  -e PGSCHEMA=myschema \
   postgres-mcp-server
 ```
 
@@ -208,7 +212,8 @@ Claude Desktop の設定ファイルを編集して、この MCP サーバーを
         "PGHOST": "localhost",
         "PGPORT": "5432",
         "PGUSER": "myuser",
-        "PGPASSWORD": "mypassword"
+        "PGPASSWORD": "mypassword",
+        "PGSCHEMA": "myschema"
       }
     }
   }
@@ -237,6 +242,8 @@ GitHub Container Registry のイメージを使用:
         "PGUSER",
         "-e",
         "PGPASSWORD",
+        "-e",
+        "PGSCHEMA",
         "ghcr.io/ssakihara/postgres-mcp-server:latest"
       ],
       "env": {
@@ -244,7 +251,8 @@ GitHub Container Registry のイメージを使用:
         "PGHOST": "host.docker.internal",
         "PGPORT": "5432",
         "PGUSER": "postgres",
-        "PGPASSWORD": "postgres"
+        "PGPASSWORD": "postgres",
+        "PGSCHEMA": "myschema"
       }
     }
   }
@@ -264,6 +272,7 @@ GitHub Container Registry のイメージを使用:
         "-e", "PGDATABASE=mydb",
         "-e", "PGUSER=myuser",
         "-e", "PGPASSWORD=mypassword",
+        "-e", "PGSCHEMA=myschema",
         "postgres-mcp-server"
       ]
     }
