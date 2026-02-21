@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { query } from '../db.js';
+import { query, getDefaultSchema } from '../db.js';
+
+const defaultSchema = getDefaultSchema();
 
 const QueryInputSchema = z.object({
   sql: z.string().min(1, 'SQL query cannot be empty'),
@@ -7,6 +9,51 @@ const QueryInputSchema = z.object({
   limit: z.number().int().min(1).max(10000).default(1000),
 });
 
+/**
+ * Extracts schema names from explicitly qualified table references in SQL query.
+ *
+ * @param sql - The SQL query to parse
+ * @returns A Set of schema names found in the query
+ */
+function extractSchemaFromQuery(sql: string): Set<string> {
+  const schemas = new Set<string>();
+
+  // FROM schema.table pattern
+  const fromPattern = /FROM\s+([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][a-zA-Z0-9_]*)/gi;
+  let match;
+  while ((match = fromPattern.exec(sql)) !== null) {
+    schemas.add(match[1]);
+  }
+
+  // JOIN schema.table pattern
+  const joinPattern = /JOIN\s+([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][a-zA-Z0-9_]*)/gi;
+  while ((match = joinPattern.exec(sql)) !== null) {
+    schemas.add(match[1]);
+  }
+
+  // INSERT INTO schema.table pattern
+  const insertPattern = /INSERT\s+INTO\s+([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][a-zA-Z0-9_]*)/gi;
+  while ((match = insertPattern.exec(sql)) !== null) {
+    schemas.add(match[1]);
+  }
+
+  // UPDATE schema.table pattern
+  const updatePattern = /UPDATE\s+([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][a-zA-Z0-9_]*)/gi;
+  while ((match = updatePattern.exec(sql)) !== null) {
+    schemas.add(match[1]);
+  }
+
+  return schemas;
+}
+
+/**
+ * Executes a SQL query with safety guards.
+ *
+ * NOTE: The search_path is restricted to PGSCHEMA at the connection level (see db.ts),
+ * so unqualified table references (e.g., "SELECT * FROM users") are limited to the PGSCHEMA schema.
+ * Explicit schema qualifications (e.g., "SELECT * FROM other_schema.table") are actively
+ * blocked to prevent unauthorized schema access.
+ */
 export async function handleQuery(input: unknown): Promise<string> {
   const { sql, params, limit = 1000 } = QueryInputSchema.parse(input);
 
@@ -18,6 +65,18 @@ export async function handleQuery(input: unknown): Promise<string> {
       message: 'DROP, TRUNCATE, ALTER, and DELETE operations are not allowed for safety reasons',
       sql: sql,
     }, null, 2);
+  }
+
+  // Block explicit schema qualifications to prevent unauthorized schema access
+  const explicitSchemas = extractSchemaFromQuery(sql);
+  for (const schema of explicitSchemas) {
+    if (schema !== defaultSchema) {
+      return JSON.stringify({
+        error: 'Schema access violation',
+        message: `Explicit schema qualification to "${schema}" is not allowed. Only "${defaultSchema}" schema is accessible.`,
+        sql: sql,
+      }, null, 2);
+    }
   }
 
   try {

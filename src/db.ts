@@ -50,6 +50,11 @@ export async function getClient(): Promise<Client> {
   client = new Client(clientConfig);
   await client.connect();
 
+  // Set search_path to restrict unqualified table references to PGSCHEMA only
+  const defaultSchema = getDefaultSchema();
+  const validatedSchema = validateSchemaForSearchPath(defaultSchema);
+  await client.query('SET search_path TO $1', [validatedSchema]);
+
   return client;
 }
 
@@ -63,6 +68,23 @@ export async function close(): Promise<void> {
     await client.end();
     client = null;
   }
+}
+
+/**
+ * Validates that the schema name does not contain dangerous special values.
+ *
+ * @param schema - The schema name to validate
+ * @returns The validated schema name
+ * @throws {Error} If the schema name contains dangerous values
+ */
+function validateSchemaForSearchPath(schema: string): string {
+  // Dangerous special values that could bypass security restrictions
+  const dangerousValues = ['$user', 'pg_catalog', 'information_schema'];
+  if (dangerousValues.includes(schema.toLowerCase())) {
+    throw new Error(`Invalid schema name: "${schema}" contains dangerous special values`);
+  }
+
+  return schema;
 }
 
 /**

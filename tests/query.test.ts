@@ -5,6 +5,7 @@ import { handleQuery } from '../src/tools/query.js';
 // Mock the db module
 vi.mock('../src/db.js', () => ({
   query: vi.fn(),
+  getDefaultSchema: vi.fn(() => 'public'),
 }));
 
 import { query } from '../src/db.js';
@@ -170,6 +171,56 @@ describe('query', () => {
         sql: 'SELECT * FROM users',
         limit: 10001,
       })).rejects.toThrow();
+    });
+
+    test('should reject queries with explicit schema qualification to non-default schema', async () => {
+      const result = JSON.parse(await handleQuery({
+        sql: 'SELECT * FROM other_schema.users',
+      }));
+
+      expect(result.error).toBe('Schema access violation');
+      expect(result.message).toContain('other_schema');
+    });
+
+    test('should allow queries with explicit default schema qualification', async () => {
+      vi.mocked(query).mockResolvedValue({
+        rows: [],
+        rowCount: 0,
+        fields: [],
+        command: 'SELECT',
+      } as QueryResult);
+
+      const result = JSON.parse(await handleQuery({
+        sql: 'SELECT * FROM public.users',
+      }));
+
+      expect(result.success).toBe(true);
+    });
+
+    test('should reject INSERT with explicit schema qualification to non-default schema', async () => {
+      const result = JSON.parse(await handleQuery({
+        sql: 'INSERT INTO other_schema.users (name) VALUES ($1)',
+        params: ['test'],
+      }));
+
+      expect(result.error).toBe('Schema access violation');
+    });
+
+    test('should reject UPDATE with explicit schema qualification to non-default schema', async () => {
+      const result = JSON.parse(await handleQuery({
+        sql: 'UPDATE other_schema.users SET name = $1',
+        params: ['test'],
+      }));
+
+      expect(result.error).toBe('Schema access violation');
+    });
+
+    test('should reject JOIN with explicit schema qualification to non-default schema', async () => {
+      const result = JSON.parse(await handleQuery({
+        sql: 'SELECT * FROM users JOIN other_schema.posts ON users.id = posts.user_id',
+      }));
+
+      expect(result.error).toBe('Schema access violation');
     });
   });
 });

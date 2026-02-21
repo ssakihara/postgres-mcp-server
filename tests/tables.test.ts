@@ -56,12 +56,10 @@ describe('tables', () => {
         rowCount: 0,
       } as QueryResult);
 
-      await handleListTables({ schema: 'app' });
+      const result = JSON.parse(await handleListTables({ schema: 'app' }));
 
-      expect(query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE table_schema = $1'),
-        ['app'],
-      );
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Access denied: Schema access is restricted to the configured default schema only.');
     });
 
     test('should not include row counts by default', async () => {
@@ -198,15 +196,13 @@ describe('tables', () => {
         rowCount: 0,
       } as QueryResult);
 
-      await handleDescribeTable({
+      const result = JSON.parse(await handleDescribeTable({
         tableName: 'users',
         schema: 'app',
-      });
+      }));
 
-      expect(query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE table_schema = $1'),
-        ['app', 'users'],
-      );
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Access denied: Schema access is restricted to the configured default schema only.');
     });
 
     test('should handle query errors', async () => {

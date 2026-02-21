@@ -24,6 +24,14 @@ function validateSchemaName(schema: string): void {
   }
 }
 
+function validateSchemaAccess(schema: string): void {
+  if (schema !== defaultSchema) {
+    throw new Error(
+      'Access denied: Schema access is restricted to the configured default schema only.',
+    );
+  }
+}
+
 const ListTablesInputSchema = z.object({
   schema: z.string().default(defaultSchema),
   includeRowCount: z.boolean().default(false),
@@ -37,10 +45,13 @@ const DescribeTableInputSchema = z.object({
 export async function handleListTables(input: unknown): Promise<string> {
   const { schema, includeRowCount = false } = ListTablesInputSchema.parse(input);
 
-  // Validate schema name to prevent SQL injection
-  validateSchemaName(schema);
-
   try {
+    // Validate schema name to prevent SQL injection
+    validateSchemaName(schema);
+
+    // Enforce schema access restriction
+    validateSchemaAccess(schema);
+
     const sql = `
       SELECT
         table_name,
@@ -93,11 +104,14 @@ export async function handleListTables(input: unknown): Promise<string> {
 export async function handleDescribeTable(input: unknown): Promise<string> {
   const { tableName, schema } = DescribeTableInputSchema.parse(input);
 
-  // Validate schema and table names to prevent SQL injection
-  validateSchemaName(schema);
-  validateTableName(tableName);
-
   try {
+    // Validate schema and table names to prevent SQL injection
+    validateSchemaName(schema);
+    validateTableName(tableName);
+
+    // Enforce schema access restriction
+    validateSchemaAccess(schema);
+
     // Get column information
     const columnsResult = await query(`
       SELECT
