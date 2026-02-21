@@ -10,34 +10,34 @@ const QueryInputSchema = z.object({
 });
 
 /**
- * Extracts schema names from explicitly qualified table references in SQL query.
+ * SQLクエリ内の明示的に修飾されたテーブル参照からスキーマ名を抽出します。
  *
- * @param sql - The SQL query to parse
- * @returns A Set of schema names found in the query
+ * @param sql - 解析するSQLクエリ
+ * @returns クエリ内で見つかったスキーマ名のセット
  */
 function extractSchemaFromQuery(sql: string): Set<string> {
   const schemas = new Set<string>();
 
-  // FROM schema.table pattern
+  // FROM schema.table パターン
   const fromPattern = /FROM\s+([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][a-zA-Z0-9_]*)/gi;
   let match;
   while ((match = fromPattern.exec(sql)) !== null) {
     schemas.add(match[1]);
   }
 
-  // JOIN schema.table pattern
+  // JOIN schema.table パターン
   const joinPattern = /JOIN\s+([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][a-zA-Z0-9_]*)/gi;
   while ((match = joinPattern.exec(sql)) !== null) {
     schemas.add(match[1]);
   }
 
-  // INSERT INTO schema.table pattern
+  // INSERT INTO schema.table パターン
   const insertPattern = /INSERT\s+INTO\s+([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][a-zA-Z0-9_]*)/gi;
   while ((match = insertPattern.exec(sql)) !== null) {
     schemas.add(match[1]);
   }
 
-  // UPDATE schema.table pattern
+  // UPDATE schema.table パターン
   const updatePattern = /UPDATE\s+([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][a-zA-Z0-9_]*)/gi;
   while ((match = updatePattern.exec(sql)) !== null) {
     schemas.add(match[1]);
@@ -47,12 +47,13 @@ function extractSchemaFromQuery(sql: string): Set<string> {
 }
 
 /**
- * Executes a SQL query with safety guards.
+ * 安全ガード付きでSQLクエリを実行します。
  *
- * NOTE: The search_path is restricted to PGSCHEMA at the connection level (see db.ts),
- * so unqualified table references (e.g., "SELECT * FROM users") are limited to the PGSCHEMA schema.
- * Explicit schema qualifications (e.g., "SELECT * FROM other_schema.table") are actively
- * blocked to prevent unauthorized schema access.
+ * 注意: search_pathは接続レベルでPGSCHEMAに制限されています（db.tsを参照）。
+ * そのため、修飾されていないテーブル参照（例: "SELECT * FROM users"）は
+ * PGSCHEMAスキーマに制限されます。
+ * 明示的なスキーマ修飾（例: "SELECT * FROM other_schema.table"）は、
+ * 認可されていないスキーマアクセスを防ぐために積極的にブロックされます。
  */
 export async function handleQuery(input: unknown): Promise<string> {
   const { sql, params, limit = 1000 } = QueryInputSchema.parse(input);

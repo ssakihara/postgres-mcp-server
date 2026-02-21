@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Entry point for MCP server
+// MCPサーバーのエントリーポイント
 
 import { startServer } from './server.js';
 

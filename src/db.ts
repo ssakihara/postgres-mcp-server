@@ -1,10 +1,10 @@
-// PostgreSQL connection management
+// PostgreSQL接続管理
 import { Client, ClientConfig, QueryResult } from 'pg';
 
-// Singleton client instance
+// シングルトンクライアントインスタンス
 let client: Client | null = null;
 
-// Schema name validation: starts with letter/underscore, contains only letters/digits/underscores, max 63 chars
+// スキーマ名バリデーション: 文字/アンダースコアで始まり、文字/数字/アンダースコアのみ含み、最大63文字
 const VALID_SCHEMA_NAME = /^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/;
 
 interface DatabaseConfig {
@@ -50,7 +50,7 @@ export async function getClient(): Promise<Client> {
   client = new Client(clientConfig);
   await client.connect();
 
-  // Set search_path to restrict unqualified table references to PGSCHEMA only
+  // 修飾されていないテーブル参照をPGSCHEMAのみに制限するためにsearch_pathを設定
   const defaultSchema = getDefaultSchema();
   const validatedSchema = validateSchemaForSearchPath(defaultSchema);
   await client.query('SET search_path TO $1', [validatedSchema]);
@@ -71,14 +71,14 @@ export async function close(): Promise<void> {
 }
 
 /**
- * Validates that the schema name does not contain dangerous special values.
+ * スキーマ名に危険な特殊値が含まれていないことを検証します。
  *
- * @param schema - The schema name to validate
- * @returns The validated schema name
- * @throws {Error} If the schema name contains dangerous values
+ * @param schema - 検証するスキーマ名
+ * @returns 検証されたスキーマ名
+ * @throws {Error} スキーマ名に危険な値が含まれる場合
  */
 function validateSchemaForSearchPath(schema: string): string {
-  // Dangerous special values that could bypass security restrictions
+  // セキュリティ制限を回避する可能性のある危険な特殊値
   const dangerousValues = ['$user', 'pg_catalog', 'information_schema'];
   if (dangerousValues.includes(schema.toLowerCase())) {
     throw new Error(`Invalid schema name: "${schema}" contains dangerous special values`);
@@ -88,11 +88,11 @@ function validateSchemaForSearchPath(schema: string): string {
 }
 
 /**
- * Gets the default schema name from PGSCHEMA environment variable.
- * Falls back to 'public' if not set.
+ * PGSCHEMA環境変数からデフォルトのスキーマ名を取得します。
+ * 設定されていない場合は 'public' にフォールバックします。
  *
- * @returns The default schema name
- * @throws {Error} If PGSCHEMA is set but contains an invalid schema name
+ * @returns デフォルトのスキーマ名
+ * @throws {Error} PGSCHEMAが設定されているが、無効なスキーマ名が含まれる場合
  */
 export function getDefaultSchema(): string {
   const schema = process.env.PGSCHEMA || 'public';

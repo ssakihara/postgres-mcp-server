@@ -3,7 +3,7 @@ import { query, getDefaultSchema } from '../db.js';
 
 const defaultSchema = getDefaultSchema();
 
-// Table name validation (same rules as schema name)
+// テーブル名バリデーション（スキーマ名と同じルール）
 const VALID_TABLE_NAME = /^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/;
 
 function validateTableName(tableName: string): void {
@@ -46,10 +46,10 @@ export async function handleListTables(input: unknown): Promise<string> {
   const { schema, includeRowCount = false } = ListTablesInputSchema.parse(input);
 
   try {
-    // Validate schema name to prevent SQL injection
+    // SQLインジェクションを防ぐためにスキーマ名を検証
     validateSchemaName(schema);
 
-    // Enforce schema access restriction
+    // スキーマアクセス制限を強制
     validateSchemaAccess(schema);
 
     const sql = `
@@ -69,7 +69,7 @@ export async function handleListTables(input: unknown): Promise<string> {
     if (includeRowCount) {
       for (const table of tables) {
         try {
-          // Validate table name to prevent SQL injection
+          // SQLインジェクションを防ぐためにテーブル名を検証
           validateTableName(table.table_name);
           const countResult = await query(`SELECT COUNT(*) as count FROM "${schema}"."${table.table_name}"`);
           table.row_count = parseInt(countResult.rows[0].count, 10);
@@ -105,14 +105,14 @@ export async function handleDescribeTable(input: unknown): Promise<string> {
   const { tableName, schema } = DescribeTableInputSchema.parse(input);
 
   try {
-    // Validate schema and table names to prevent SQL injection
+    // SQLインジェクションを防ぐためにスキーマ名とテーブル名を検証
     validateSchemaName(schema);
     validateTableName(tableName);
 
-    // Enforce schema access restriction
+    // スキーマアクセス制限を強制
     validateSchemaAccess(schema);
 
-    // Get column information
+    // カラム情報を取得
     const columnsResult = await query(`
       SELECT
         column_name,
@@ -126,7 +126,7 @@ export async function handleDescribeTable(input: unknown): Promise<string> {
       ORDER BY ordinal_position
     `, [schema, tableName]);
 
-    // Get primary key information
+    // プライマリキー情報を取得
     const pkResult = await query(`
       SELECT a.attname AS column_name
       FROM pg_index i
@@ -136,7 +136,7 @@ export async function handleDescribeTable(input: unknown): Promise<string> {
 
     const primaryKeys = pkResult.rows.map((r: { column_name: string }) => r.column_name);
 
-    // Get foreign key information
+    // 外部キー情報を取得
     const fkResult = await query(`
       SELECT
         kcu.column_name,
@@ -152,7 +152,7 @@ export async function handleDescribeTable(input: unknown): Promise<string> {
         AND tc.table_name = $2
     `, [schema, tableName]);
 
-    // Get index information
+    // インデックス情報を取得
     const indexResult = await query(`
       SELECT
         indexname,

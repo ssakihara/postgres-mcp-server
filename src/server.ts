@@ -13,7 +13,7 @@ const server = new McpServer(
   },
 );
 
-// Register query tool
+// queryツールを登録
 server.registerTool('query', {
   description: 'Execute a SQL query against the PostgreSQL database. Returns the results as JSON. '
     + 'For SELECT queries, returns rows of data. For INSERT/UPDATE/DELETE, returns affected row count.',
@@ -29,7 +29,7 @@ server.registerTool('query', {
   };
 });
 
-// Register list_schemas tool
+// list_schemasツールを登録
 server.registerTool('list_schemas', {
   description: 'List all schemas in the current database',
   inputSchema: {
@@ -43,7 +43,7 @@ async (args: unknown) => {
   };
 });
 
-// Register list_tables tool
+// list_tablesツールを登録
 server.registerTool('list_tables', {
   description: 'List all tables in a schema, optionally including row counts',
   inputSchema: {
@@ -58,7 +58,7 @@ async (args: unknown) => {
   };
 });
 
-// Register describe_table tool
+// describe_tableツールを登録
 server.registerTool('describe_table', {
   description: 'Get detailed information about a table including columns, data types, constraints, and indexes',
   inputSchema: {
@@ -73,7 +73,7 @@ async (args: unknown) => {
   };
 });
 
-// Graceful shutdown
+// グレースフルシャットダウン
 process.on('SIGINT', async () => {
   await close();
   process.exit(0);
