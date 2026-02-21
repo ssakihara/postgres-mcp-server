@@ -1,8 +1,8 @@
 // PostgreSQL接続管理
-import { Client, ClientConfig, QueryResult } from 'pg';
+import { Pool, PoolConfig, QueryResult } from 'pg';
 
-// シングルトンクライアントインスタンス
-let client: Client | null = null;
+// シングルトンプールインスタンス
+let pool: Pool | null = null;
 
 // スキーマ名バリデーション: 文字/アンダースコアで始まり、文字/数字/アンダースコアのみ含み、最大63文字
 const VALID_SCHEMA_NAME = /^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/;
@@ -30,43 +30,77 @@ function getConfig(): DatabaseConfig {
   return { host, port, database, user, password };
 }
 
-export async function getClient(): Promise<Client> {
-  if (client) {
-    return client;
+/**
+ * 接続プールを取得します。
+ * 初回呼び出し時にプールが初期化されます。
+ */
+export function getPool(): Pool {
+  if (pool) {
+    return pool;
   }
 
   const config = getConfig();
-  const clientConfig: ClientConfig = {
+  const defaultSchema = getDefaultSchema();
+  const validatedSchema = validateSchemaForSearchPath(defaultSchema);
+
+  const poolConfig: PoolConfig = {
     host: config.host,
     port: config.port,
     database: config.database,
     user: config.user,
+    max: parseInt(process.env.PG_MAX_CONNECTIONS || '5', 10),
+    idleTimeoutMillis: parseInt(process.env.PG_IDLE_TIMEOUT || '30000', 10),
+    connectionTimeoutMillis: parseInt(process.env.PG_CONNECTION_TIMEOUT || '2000', 10),
   };
 
   if (config.password) {
-    clientConfig.password = config.password;
+    poolConfig.password = config.password;
   }
 
-  client = new Client(clientConfig);
-  await client.connect();
+  // 接続オプションでsearch_pathを設定（各接続の初期化時に適用）
+  poolConfig.options = `-c search_path=${validatedSchema}`;
 
-  // 修飾されていないテーブル参照をPGSCHEMAのみに制限するためにsearch_pathを設定
-  const defaultSchema = getDefaultSchema();
-  const validatedSchema = validateSchemaForSearchPath(defaultSchema);
-  await client.query('SET search_path TO $1', [validatedSchema]);
+  pool = new Pool(poolConfig);
 
-  return client;
+  // プールエラーハンドリング
+  pool.on('error', (err) => {
+    console.error('Unexpected error on idle client', err);
+  });
+
+  return pool;
 }
 
-export async function query(sql: string, params?: unknown[]): Promise<QueryResult> {
-  const client = await getClient();
-  return client.query(sql, params);
+/**
+ * クエリを実行します。接続エラー時に再試行します。
+ */
+export async function query(sql: string, params?: unknown[], retryCount = 0): Promise<QueryResult> {
+  const pool = getPool();
+
+  try {
+    return await pool.query(sql, params);
+  }
+  catch (error) {
+    // 接続エラーの場合、再試行
+    if (error instanceof Error
+      && (error.message.includes('connection')
+        || error.message.includes('timeout')
+        || error.message.includes('terminated'))
+      && retryCount < 3) {
+      console.warn(`クエリ実行エラー、再試行中 (${retryCount + 1}/3): ${error.message}`);
+      return query(sql, params, retryCount + 1);
+    }
+    throw error;
+  }
 }
 
+/**
+ * 接続プールをグレースフルにクローズします。
+ */
 export async function close(): Promise<void> {
-  if (client) {
-    await client.end();
-    client = null;
+  if (pool) {
+    // タイムアウト付きでグレースフルシャットダウン
+    await pool.end();
+    pool = null;
   }
 }
 
