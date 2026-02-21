@@ -5,7 +5,6 @@ LLM が PostgreSQL データベースと対話できるようにする MCP (Mode
 ## 特徴
 
 - **クエリ実行**: SELECT ステートメントの自動制限付きで SQL クエリを実行
-- **スキーマ探索**: データベース内のすべてのスキーマを一覧表示
 - **テーブル検査**: テーブルとテーブル構造（カラム、型、制約、インデックス）を記述
 - **安全な操作**: 危険な操作（DROP、TRUNCATE、ALTER、DELETE）に対する保護機能
 - **Docker サポート**: 簡単な統合のためのコンテナ化デプロイメント
@@ -70,34 +69,13 @@ claude mcp add -s project pms docker \
 }
 ```
 
-### `list_schemas`
-
-データベース内のすべてのスキーマを一覧表示します。
-
-**入力:**
-```json
-{
-  "includeSystemSchemas": false
-}
-```
-
-**レスポンス:**
-```json
-{
-  "success": true,
-  "schemas": [...],
-  "count": 1
-}
-```
-
 ### `list_tables`
 
-スキーマ内のテーブルを一覧表示します。
+PGSCHEMA環境変数で設定したスキーマ内のテーブルを一覧表示します。
 
 **入力:**
 ```json
 {
-  "schema": "public",
   "includeRowCount": false
 }
 ```
@@ -114,13 +92,12 @@ claude mcp add -s project pms docker \
 
 ### `describe_table`
 
-テーブルの詳細情報を取得します。
+PGSCHEMA環境変数で設定したスキーマ内のテーブルの詳細情報を取得します。
 
 **入力:**
 ```json
 {
-  "tableName": "users",
-  "schema": "public"
+  "tableName": "users"
 }
 ```
 

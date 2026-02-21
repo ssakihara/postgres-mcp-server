@@ -3,7 +3,6 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { close } from './db.js';
 import { handleQuery } from './tools/query.js';
-import { handleListSchemas } from './tools/schema.js';
 import { handleListTables, handleDescribeTable } from './tools/tables.js';
 
 const server = new McpServer(
@@ -29,25 +28,10 @@ server.registerTool('query', {
   };
 });
 
-// list_schemasツールを登録
-server.registerTool('list_schemas', {
-  description: 'List all schemas in the current database',
-  inputSchema: {
-    includeSystemSchemas: z.boolean().default(false).describe('Include system schemas like pg_catalog, information_schema (default: false)'),
-  },
-},
-async (args: unknown) => {
-  const result = await handleListSchemas(args);
-  return {
-    content: [{ type: 'text', text: result }],
-  };
-});
-
 // list_tablesツールを登録
 server.registerTool('list_tables', {
-  description: 'List all tables in a schema, optionally including row counts',
+  description: 'List all tables in the configured schema (PGSCHEMA), optionally including row counts',
   inputSchema: {
-    schema: z.string().default('public').describe('Schema name to list tables from (default: public)'),
     includeRowCount: z.boolean().default(false).describe('Include row counts for each table (slower for large databases)'),
   },
 },
@@ -63,7 +47,6 @@ server.registerTool('describe_table', {
   description: 'Get detailed information about a table including columns, data types, constraints, and indexes',
   inputSchema: {
     tableName: z.string().min(1).describe('Name of the table to describe'),
-    schema: z.string().default('public').describe('Schema name (default: public)'),
   },
 },
 async (args: unknown) => {

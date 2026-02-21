@@ -50,18 +50,6 @@ describe('tables', () => {
       );
     });
 
-    test('should use custom schema when provided', async () => {
-      vi.mocked(query).mockResolvedValue({
-        rows: [],
-        rowCount: 0,
-      } as QueryResult);
-
-      const result = JSON.parse(await handleListTables({ schema: 'app' }));
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Access denied: Schema access is restricted to the configured default schema only.');
-    });
-
     test('should not include row counts by default', async () => {
       vi.mocked(query).mockResolvedValue({
         rows: [{ table_name: 'users', table_type: 'BASE TABLE' }],
@@ -157,7 +145,6 @@ describe('tables', () => {
 
       const result = JSON.parse(await handleDescribeTable({
         tableName: 'users',
-        schema: 'public',
       }));
 
       expect(result.success).toBe(true);
@@ -188,21 +175,6 @@ describe('tables', () => {
         expect.stringContaining('WHERE table_schema = $1'),
         ['public', 'users'],
       );
-    });
-
-    test('should use custom schema when provided', async () => {
-      vi.mocked(query).mockResolvedValue({
-        rows: [],
-        rowCount: 0,
-      } as QueryResult);
-
-      const result = JSON.parse(await handleDescribeTable({
-        tableName: 'users',
-        schema: 'app',
-      }));
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('Access denied: Schema access is restricted to the configured default schema only.');
     });
 
     test('should handle query errors', async () => {

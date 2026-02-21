@@ -15,42 +15,19 @@ function validateTableName(tableName: string): void {
   }
 }
 
-function validateSchemaName(schema: string): void {
-  if (!VALID_TABLE_NAME.test(schema)) {
-    throw new Error(
-      `Invalid schema name: "${schema}". Schema names must start with a letter or underscore, `
-      + `contain only letters, digits, and underscores, and be 63 characters or less.`,
-    );
-  }
-}
-
-function validateSchemaAccess(schema: string): void {
-  if (schema !== defaultSchema) {
-    throw new Error(
-      'Access denied: Schema access is restricted to the configured default schema only.',
-    );
-  }
-}
-
 const ListTablesInputSchema = z.object({
-  schema: z.string().default(defaultSchema),
   includeRowCount: z.boolean().default(false),
 });
 
 const DescribeTableInputSchema = z.object({
   tableName: z.string().min(1, 'Table name cannot be empty'),
-  schema: z.string().default(defaultSchema),
 });
 
 export async function handleListTables(input: unknown): Promise<string> {
-  const { schema, includeRowCount = false } = ListTablesInputSchema.parse(input);
+  const { includeRowCount = false } = ListTablesInputSchema.parse(input);
 
   try {
-    // SQLインジェクションを防ぐためにスキーマ名を検証
-    validateSchemaName(schema);
-
-    // スキーマアクセス制限を強制
-    validateSchemaAccess(schema);
+    const schema = defaultSchema;
 
     const sql = `
       SELECT
@@ -102,15 +79,11 @@ export async function handleListTables(input: unknown): Promise<string> {
 }
 
 export async function handleDescribeTable(input: unknown): Promise<string> {
-  const { tableName, schema } = DescribeTableInputSchema.parse(input);
+  const { tableName } = DescribeTableInputSchema.parse(input);
 
   try {
-    // SQLインジェクションを防ぐためにスキーマ名とテーブル名を検証
-    validateSchemaName(schema);
+    const schema = defaultSchema;
     validateTableName(tableName);
-
-    // スキーマアクセス制限を強制
-    validateSchemaAccess(schema);
 
     // カラム情報を取得
     const columnsResult = await query(`

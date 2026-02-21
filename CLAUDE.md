@@ -59,7 +59,7 @@ pnpm run docker:run
 
 - **`src/server.ts`**: `@modelcontextprotocol/sdk` を使用した MCP サーバー設定
   - サーバーメタデータで `McpServer` インスタンスを作成
-  - すべてのツールを登録 (`query`, `list_schemas`, `list_tables`, `describe_table`)
+  - すべてのツールを登録 (`query`, `list_tables`, `describe_table`)
   - グレースフルシャットダウンを処理 (SIGINT/SIGTERM)
   - 通信用に `StdioServerTransport` を使用
 
@@ -81,9 +81,6 @@ pnpm run docker:run
   - SELECT クエリに自動で LIMIT を適用 (デフォルト: 1000, 最大: 10000)
   - パラメータ化クエリをサポート
 
-- **`schema.ts`**: データベーススキーマを一覧表示
-  - デフォルトでシステムスキーマ (`pg_catalog`, `information_schema`, `pg_*`) をフィルタリング
-
 - **`tables.ts`**: テーブルイントロスペクション
   - `handleListTables()`: スキーマ内のテーブルを一覧表示（オプションで行数カウント付き）
   - `handleDescribeTable()`: カラム、型、制約、PK、FK、インデックスを返す
@@ -100,9 +97,8 @@ pnpm run docker:run
 すべてのツールは `{ success, ... }` パターンの JSON フォーマット文字列を返します。
 
 1. **`query`**: SQL を実行（SELECT には自動 LIMIT 付き）
-2. **`list_schemas`**: すべてのスキーマを一覧表示
-3. **`list_tables`**: スキーマ内のテーブルを一覧表示
-4. **`describe_table`**: テーブルの詳細情報を取得
+2. **`list_tables`**: スキーマ内のテーブルを一覧表示
+3. **`describe_table`**: テーブルの詳細情報を取得
 
 ## 重要な注意点
 
