@@ -22,8 +22,8 @@ describe('query', () => {
       }));
 
       expect(result).toEqual({
-        error: 'Dangerous operation detected',
-        message: 'DROP, TRUNCATE, ALTER, and DELETE operations are not allowed for safety reasons',
+        error: '危険な操作が検出されました',
+        message: '安全上の理由から、DROP、TRUNCATE、ALTER、DELETE操作は許可されていません',
         sql: 'DROP TABLE users',
       });
     });
@@ -33,7 +33,7 @@ describe('query', () => {
         sql: 'TRUNCATE TABLE users',
       }));
 
-      expect(result.error).toBe('Dangerous operation detected');
+      expect(result.error).toBe('危険な操作が検出されました');
     });
 
     test('should reject ALTER operations', async () => {
@@ -41,7 +41,7 @@ describe('query', () => {
         sql: 'ALTER TABLE users ADD COLUMN name TEXT',
       }));
 
-      expect(result.error).toBe('Dangerous operation detected');
+      expect(result.error).toBe('危険な操作が検出されました');
     });
 
     test('should reject DELETE FROM operations', async () => {
@@ -49,7 +49,7 @@ describe('query', () => {
         sql: 'DELETE FROM users WHERE id = 1',
       }));
 
-      expect(result.error).toBe('Dangerous operation detected');
+      expect(result.error).toBe('危険な操作が検出されました');
     });
 
     test('should allow SELECT queries', async () => {
@@ -135,7 +135,7 @@ describe('query', () => {
       }));
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Unknown error occurred');
+      expect(result.error).toBe('不明なエラーが発生しました');
     });
 
     test('should use default limit of 1000', async () => {
@@ -178,23 +178,17 @@ describe('query', () => {
         sql: 'SELECT * FROM other_schema.users',
       }));
 
-      expect(result.error).toBe('Schema access violation');
-      expect(result.message).toContain('other_schema');
+      expect(result.error).toBe('スキーマアクセス違反');
+      expect(result.detected_schemas).toBe('other_schema');
     });
 
-    test('should allow queries with explicit default schema qualification', async () => {
-      vi.mocked(query).mockResolvedValue({
-        rows: [],
-        rowCount: 0,
-        fields: [],
-        command: 'SELECT',
-      } as QueryResult);
-
+    test('should reject queries with explicit default schema qualification', async () => {
       const result = JSON.parse(await handleQuery({
         sql: 'SELECT * FROM public.users',
       }));
 
-      expect(result.success).toBe(true);
+      expect(result.error).toBe('スキーマアクセス違反');
+      expect(result.detected_schemas).toBe('public');
     });
 
     test('should reject INSERT with explicit schema qualification to non-default schema', async () => {
@@ -203,7 +197,7 @@ describe('query', () => {
         params: ['test'],
       }));
 
-      expect(result.error).toBe('Schema access violation');
+      expect(result.error).toBe('スキーマアクセス違反');
     });
 
     test('should reject UPDATE with explicit schema qualification to non-default schema', async () => {
@@ -212,7 +206,7 @@ describe('query', () => {
         params: ['test'],
       }));
 
-      expect(result.error).toBe('Schema access violation');
+      expect(result.error).toBe('スキーマアクセス違反');
     });
 
     test('should reject JOIN with explicit schema qualification to non-default schema', async () => {
@@ -220,7 +214,7 @@ describe('query', () => {
         sql: 'SELECT * FROM users JOIN other_schema.posts ON users.id = posts.user_id',
       }));
 
-      expect(result.error).toBe('Schema access violation');
+      expect(result.error).toBe('スキーマアクセス違反');
     });
   });
 });

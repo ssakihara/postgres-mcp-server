@@ -4,7 +4,7 @@ import { query, getDefaultSchema } from '../db.js';
 const defaultSchema = getDefaultSchema();
 
 const QueryInputSchema = z.object({
-  sql: z.string().min(1, 'SQL query cannot be empty'),
+  sql: z.string().min(1, 'SQLクエリは空にできません'),
   params: z.array(z.unknown()).optional(),
   limit: z.number().int().min(1).max(10000).default(1000),
 });
@@ -58,26 +58,27 @@ function extractSchemaFromQuery(sql: string): Set<string> {
 export async function handleQuery(input: unknown): Promise<string> {
   const { sql, params, limit = 1000 } = QueryInputSchema.parse(input);
 
-  // Basic SQL injection prevention - dangerous operations are blocked
+  // 基本的なSQLインジェクション防止 - 危険な操作はブロックされます
   const upperSql = sql.toUpperCase().trim();
   if (upperSql.startsWith('DROP ') || upperSql.startsWith('TRUNCATE ') || upperSql.startsWith('ALTER ') || upperSql.startsWith('DELETE ')) {
     return JSON.stringify({
-      error: 'Dangerous operation detected',
-      message: 'DROP, TRUNCATE, ALTER, and DELETE operations are not allowed for safety reasons',
+      error: '危険な操作が検出されました',
+      message: '安全上の理由から、DROP、TRUNCATE、ALTER、DELETE操作は許可されていません',
       sql: sql,
     }, null, 2);
   }
 
-  // Block explicit schema qualifications to prevent unauthorized schema access
+  // 明示的なスキーマ修飾をすべてブロック（PGSCHEMA以外へのアクセスを防ぐため）
+  // 修飾されていないテーブル参照はsearch_path設定によりPGSCHEMAに自動的にルーティングされる
   const explicitSchemas = extractSchemaFromQuery(sql);
-  for (const schema of explicitSchemas) {
-    if (schema !== defaultSchema) {
-      return JSON.stringify({
-        error: 'Schema access violation',
-        message: `Explicit schema qualification to "${schema}" is not allowed. Only "${defaultSchema}" schema is accessible.`,
-        sql: sql,
-      }, null, 2);
-    }
+  if (explicitSchemas.size > 0) {
+    const foundSchemas = Array.from(explicitSchemas).join('", "');
+    return JSON.stringify({
+      error: 'スキーマアクセス違反',
+      message: `明示的なスキーマ修飾は許可されていません。スキーマ指定なし（例: "SELECT * FROM users"）でクエリを実行してください。PGSCHEMA="${defaultSchema}"スキーマに自動的にアクセスされます。`,
+      detected_schemas: foundSchemas,
+      sql: sql,
+    }, null, 2);
   }
 
   try {
@@ -107,7 +108,7 @@ export async function handleQuery(input: unknown): Promise<string> {
     }
     return JSON.stringify({
       success: false,
-      error: 'Unknown error occurred',
+      error: '不明なエラーが発生しました',
       sql: sql,
     }, null, 2);
   }
